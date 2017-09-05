@@ -5,13 +5,17 @@
  */
 package db;
 
-import com.mysql.jdbc.Connection;
+//import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Connection;
+import java.sql.Driver;
 import java.util.Properties;
+import util.Constants;
 import util.EnumConnectionType;
 
 /**
@@ -21,7 +25,7 @@ import util.EnumConnectionType;
 public class ConnectionFactory {
     private static Connection connection;
     
-    private static Connection createConnection(EnumConnectionType type) throws IOException, FileNotFoundException, SQLException{
+    public static Connection createConnection(EnumConnectionType type) throws IOException, FileNotFoundException, SQLException{
         if(connection != null)
             return connection;
         else
@@ -30,23 +34,32 @@ public class ConnectionFactory {
         return connection;
     }
 
-    private static Connection getConnection(EnumConnectionType type) throws FileNotFoundException, IOException, SQLException {
+    private static Connection getConnection(EnumConnectionType type) throws IOException, SQLException {
         Properties properties = new Properties();
         properties.load(new FileInputStream("db.config"));
         
         switch(type){
             case DRIVER_MANAGER:
-                return (Connection) DriverManager.getConnection(
-                        properties.getProperty("url"), 
-                        properties.getProperty("username"), 
-                        properties.getProperty("password"));
+                return  DriverManager.getConnection(
+                        properties.getProperty(Constants.DB_CONFIG_URL), 
+                        properties.getProperty(Constants.DB_CONFIG_USERNAME), 
+                        properties.getProperty(Constants.DB_CONFIG_PASSWORD));
             case DATASOURCE:
-                break;
+                MysqlDataSource mysql_data_source = new MysqlDataSource();
+                mysql_data_source.setURL(properties.getProperty(Constants.DB_CONFIG_URL));
+                mysql_data_source.setUser(properties.getProperty(Constants.DB_CONFIG_USERNAME));
+                mysql_data_source.setPassword(properties.getProperty(Constants.DB_CONFIG_PASSWORD));
+                return mysql_data_source.getConnection();
             case DRIVER:
-                break;
+                Driver driver = DriverManager.getDriver(properties.getProperty(Constants.DB_CONFIG_URL));
+                System.out.println("Driver: " + driver.getClass().getName());
+                Properties dbproperty = new Properties();
+                dbproperty.put("user", properties.getProperty("username"));
+                dbproperty.put("password", properties.getProperty("password"));
+                return driver.connect(properties.getProperty(Constants.DB_CONFIG_URL), dbproperty);
             default : 
                 return null;
         }
-        return null;
+       
     }
 }

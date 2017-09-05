@@ -6,6 +6,7 @@
 package domen;
 
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Objects;
 import util.Pol;
 
@@ -27,6 +28,11 @@ public class Nalog {
     private String password;
 
     public Nalog() {
+    }
+    
+    public Nalog(String username, String password){
+        this.username = username;
+        this.password = password;
     }
     
     // Konstruktor BEZ istorijeAktivnosti

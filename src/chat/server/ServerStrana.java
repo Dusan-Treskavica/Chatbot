@@ -36,8 +36,9 @@ public class ServerStrana {
         
         while(true){
             Socket client = soket.accept();
-            //ServerChat newClient = new ServerChat(client);
-            Thread newThread = new Thread(new ServerChat(client));
+            System.out.println("Novi klijent");
+            //ServerChat newClient = new ServerChatClient(client);
+            Thread newThread = new Thread(new ServerChatClient(client));
             newThread.start();
         }
     }
