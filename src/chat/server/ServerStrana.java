@@ -8,6 +8,7 @@ package chat.server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,6 +18,7 @@ import java.util.logging.Logger;
  */
 public class ServerStrana {
     
+    public static LinkedList<ServerChatClient> aktivniKlijenti = new LinkedList<ServerChatClient>();
     public static final int PORT = 5555;
 
     public ServerStrana() {

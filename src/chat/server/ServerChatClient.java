@@ -5,6 +5,7 @@
  */
 package chat.server;
 
+
 import chat.controler.ControlerServer;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -23,6 +24,7 @@ import java.util.logging.Logger;
  */
 public class ServerChatClient implements Runnable{
     
+    private String username;
     private Socket soketZaKomunikaciju;
     public static BufferedReader IN;
     public static PrintStream OUT;
@@ -47,14 +49,17 @@ public class ServerChatClient implements Runnable{
             OUT = new PrintStream(
                                         soketZaKomunikaciju.getOutputStream());
             
+            
+            
             String poruka = "";
+            
             while(true){
                 poruka = IN.readLine();
                 if(poruka.startsWith("hello")){
-                    OUT.println("Welcome!!!");
+                   // OUT.println("Welcome!!!");
                 }else{
                     
-                    ControlerServer.osluskivac(poruka);
+                    ControlerServer.osluskivac(poruka, ServerChatClient.this);
                     
                     System.out.println(poruka);
                     //OUT.println("Your message is: "+ poruka);
@@ -66,6 +71,14 @@ public class ServerChatClient implements Runnable{
         } catch (SQLException ex) {
             Logger.getLogger(ServerChatClient.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
     
     

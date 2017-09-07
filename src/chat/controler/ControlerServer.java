@@ -6,6 +6,7 @@
 package chat.controler;
 
 import chat.server.ServerChatClient;
+import chat.server.ServerStrana;
 import dao.DaoIstorijaAktivnosti;
 import dao.DaoNalog;
 import dao.impl.DaoIstorijaAktivnostiImpl;
@@ -31,12 +32,12 @@ import util.TipAktivnosti;
  */
 public class ControlerServer {
     
-    public static void registracija() throws IOException, FileNotFoundException, SQLException{
+    public static void registracija(ServerChatClient client) throws IOException, FileNotFoundException, SQLException{
         String log = ServerChatClient.IN.readLine();
-        String[] niz = log.split(":");//(ime, prezime, datRodjenja, pol, drzava, username, password)
+        String[] niz = log.split(":");//(ime, prezime, datRodjenja, pol, drzava, username, password)               
         
         
-        
+        // pretvaranje elmenta datum iz niza u niz integera da bismo mogli da kreiramo datum rodjenja novog korisnika
         int[] datum = Arrays.asList(niz[2].split("\\.")).stream().mapToInt(Integer::parseInt).toArray();
         Calendar cal = Calendar.getInstance();
         cal.set(datum[2], datum[1]-1, datum[0]);
@@ -50,15 +51,55 @@ public class ControlerServer {
             
             dia.kreirajTabeluAktivnosti(niz[5]);
             novi.setNazivIstorije("IstorijaAktivnosti_"+novi.getUsername());
-            dn.kreirajNalog(novi);
-            
+            dn.kreirajNalog(novi);                   
             dia.unesiAktivnost(TipAktivnosti.KreiranjeNaloga, niz[5], null, "Kreiran nalog");
+           
+            client.setUsername(novi.getUsername());
+            ServerStrana.aktivniKlijenti.add(client);
+            
             String povratnaPoruka = "success:" + niz[0] +":"+ niz[1] +":"+ niz[5];
             ServerChatClient.OUT.println(povratnaPoruka);
         }
         
     }
-    public static void prijavljivanje() throws IOException, SQLException{
+    
+    public static void registracija1(ServerChatClient client) throws IOException, FileNotFoundException, SQLException{
+        Nalog novi;
+        boolean signal = false;
+        do{
+            if(signal)
+                ServerChatClient.OUT.println("bad");
+            
+            String log = ServerChatClient.IN.readLine();
+            String[] niz = log.split(":");//(ime, prezime, datRodjenja, pol, drzava, username, password)               
+
+
+            // pretvaranje elmenta datum iz niza u niz integera da bismo mogli da kreiramo datum rodjenja novog korisnika
+            int[] datum = Arrays.asList(niz[2].split("\\.")).stream().mapToInt(Integer::parseInt).toArray();
+            Calendar cal = Calendar.getInstance();
+            cal.set(datum[2], datum[1]-1, datum[0]);
+            novi = new Nalog(niz[0], niz[1], cal.getTime(), Pol.valueOf(niz[3]), niz[4], null, null, niz[5], niz[6]);
+        }while(signal = uporediNalogSaBazom(novi));
+        
+        
+            DaoIstorijaAktivnosti dia = new DaoIstorijaAktivnostiImpl();
+            DaoNalog dn = new DaoNalogImpl();
+            
+            dia.kreirajTabeluAktivnosti(novi.getUsername());
+            novi.setNazivIstorije("IstorijaAktivnosti_"+novi.getUsername());
+            dn.kreirajNalog(novi);                   
+            dia.unesiAktivnost(TipAktivnosti.KreiranjeNaloga, novi.getUsername(), null, "Kreiran nalog");
+           
+            client.setUsername(novi.getUsername());
+            ServerStrana.aktivniKlijenti.add(client);
+            
+            String povratnaPoruka = "success:" + novi.getIme() +":"+ novi.getPrezime() +":"+ novi.getUsername();
+            ServerChatClient.OUT.println(povratnaPoruka);
+        
+        
+    }
+    
+    public static void prijavljivanje(ServerChatClient client) throws IOException, SQLException{
         String log = ServerChatClient.IN.readLine();
         String[] niz = log.split(":"); // username , password
         
@@ -68,19 +109,51 @@ public class ControlerServer {
         }else{
             DaoIstorijaAktivnosti dia = new DaoIstorijaAktivnostiImpl();
             dia.unesiAktivnost(TipAktivnosti.Prijavljivanje, niz[0], null, "Korisnik se prijavio");
+            
+            //ubacivanje klijenta u listu aktivnih klijenata
+            client.setUsername(novi.getUsername());
+            ServerStrana.aktivniKlijenti.add(client);
+            
             String povratnaPoruka = "success:"+ novi.getIme() +":"+ novi.getPrezime() +":"+ novi.getUsername();
             ServerChatClient.OUT.println(povratnaPoruka);
         }
         
     }
+    
+    public static void prijavljivanje1(ServerChatClient client) throws IOException, SQLException{
+        boolean signal = false;
+        Nalog novi;
+        do{
+            if(signal)
+                ServerChatClient.OUT.println("bad");
+            
+            String log = ServerChatClient.IN.readLine();
+            String[] niz = log.split(":"); // username , password
 
-    public static void osluskivac(String poruka) throws IOException, SQLException {
+            novi = new Nalog(niz[0], niz[1]);        
+        }
+        while(signal = ((novi = uporediNalogSaBazomIVratiNazad(novi)) == null));
+                
+        DaoIstorijaAktivnosti dia = new DaoIstorijaAktivnostiImpl();
+        dia.unesiAktivnost(TipAktivnosti.Prijavljivanje, novi.getUsername(), null, "Korisnik se prijavio");
+
+        //ubacivanje klijenta u listu aktivnih klijenata
+        client.setUsername(novi.getUsername());
+        ServerStrana.aktivniKlijenti.add(client);
+
+        String povratnaPoruka = "success:"+ novi.getIme() +":"+ novi.getPrezime() +":"+ novi.getUsername();
+        ServerChatClient.OUT.println(povratnaPoruka);                
+    }
+
+    public static void osluskivac(String poruka, ServerChatClient client) throws IOException, SQLException {
         switch(poruka){
             case "signup":
-                registracija();
+                registracija1(client);
+                ServerChatClient.OUT.println("Uspesno registrovanje :D");
                 break;
             case "signin":
-                prijavljivanje();
+                prijavljivanje1(client);
+                ServerChatClient.OUT.println("Uspesno prijavljivanje :D");
                 break;
             default:
                 break;
